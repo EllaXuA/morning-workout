@@ -55,8 +55,10 @@
   .step-title span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .step-min{font-size:12px;color:var(--sub);flex:none}
   .chev{font-size:13px;color:var(--sub);flex:none;margin-left:4px}
-  .ic-edit{font-size:12px;color:var(--sub);cursor:pointer;flex:none;opacity:.6}
+  .ic-edit{font-size:12px;color:var(--sub);cursor:pointer;flex:none;opacity:.5}
   .ic-edit:hover{opacity:1;color:var(--accent)}
+  .del-card-btn{flex:none;display:inline-flex;align-items:center;color:var(--sub);cursor:pointer;opacity:.4;transition:opacity .15s,color .15s}
+  .del-card-btn:hover{opacity:1;color:#c0392b}
   .goal{font-size:13px;color:var(--sub);margin:8px 0 0;padding-left:40px}
 
   .body{display:none;margin-top:14px}
@@ -103,9 +105,16 @@
     font-size:13px;padding:8px 12px;border:1px solid var(--line);background:#fff;
     border-radius:9px;cursor:pointer;white-space:nowrap;
   }
-  .del-card{
-    font-size:12.5px;color:#c0392b;background:none;border:1px solid #e6c9c3;
-    padding:7px 12px;border-radius:9px;cursor:pointer;
+  /* 仅在支持 hover 的设备(桌面)平时隐藏操作图标、悬停浮现;触屏设备始终显示 */
+  @media (hover: hover){
+    .ic-edit{opacity:0}
+    .step-top:hover .ic-edit{opacity:.5}
+    .ic-edit:hover{opacity:1}
+    .del-card-btn{opacity:0}
+    .step:hover .del-card-btn{opacity:.4}
+    .del-card-btn:hover{opacity:1}
+    .chip-ic{display:none}
+    .chip:hover .chip-ic{display:flex}
   }
 
   .add-card{
@@ -191,6 +200,21 @@ let DATA = JSON.parse(localStorage.getItem(LS_DATA)||"null");
 if(!DATA){ DATA=seed(); }
 function saveData(){ localStorage.setItem(LS_DATA,JSON.stringify(DATA)); }
 function parseBv(s){ const m=(s||"").match(/BV[0-9A-Za-z]{10}/); return m?m[0]:null; }
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// 通过 JSONP 读取 B站视频标题(绕过跨域;失败回调 null)
+let cbSeq=0;
+function fetchBiliTitle(bv, done){
+  const name="__biliCb_"+(cbSeq++);
+  const s=document.createElement("script");
+  let fin=false;
+  const cleanup=()=>{ try{ delete window[name]; }catch(e){ window[name]=undefined; } s.remove(); };
+  window[name]=r=>{ if(fin)return; fin=true; done(r&&r.code===0&&r.data?r.data.title:null); cleanup(); };
+  s.onerror=()=>{ if(fin)return; fin=true; done(null); cleanup(); };
+  s.src="https://api.bilibili.com/x/web-interface/view?bvid="+bv+"&jsonp=jsonp&callback="+name;
+  document.body.appendChild(s);
+  setTimeout(()=>{ if(fin)return; fin=true; done(null); cleanup(); }, 8000);
+}
 
 const today = new Date().getDay();
 let viewDay = today;
@@ -240,7 +264,7 @@ function render(){
 
     const chips=sec.videos.map(v=>
       `<div class="chip${v.bv===activeBv?" sel":""}">
-         <span class="chip-lbl" data-act="pick" data-i="${i}" data-bv="${v.bv}">${v.label}</span>
+         <span class="chip-lbl" data-act="pick" data-i="${i}" data-bv="${v.bv}">${esc(v.label)}</span>
          <span class="chip-ic" data-act="editVid" data-i="${i}" data-bv="${v.bv}" title="改名">✎</span>
          <span class="chip-ic chip-del" data-act="delVid" data-i="${i}" data-bv="${v.bv}" title="删除">×</span>
        </div>`
@@ -256,23 +280,22 @@ function render(){
       <div class="step-top" data-act="toggle" data-i="${i}">
         <div class="badge">${isDone?"✓":i+1}</div>
         <div class="step-title">
-          <span>${sec.title}</span>
+          <span>${esc(sec.title)}</span>
           <span class="ic-edit" data-act="editTitle" data-i="${i}" title="改训练项目名">✎</span>
         </div>
-        <div class="step-min">${sec.min||""}</div>
+        <div class="step-min">${esc(sec.min||"")}</div>
+        <span class="del-card-btn" data-act="delCard" data-i="${i}" title="删除此训练项目"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m1 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7M10 11v6M14 11v6"/></svg></span>
         <div class="chev">${isActive?"▾":"▸"}</div>
       </div>
-      ${sec.goal?`<div class="goal">${sec.goal}</div>`:""}
+      ${sec.goal?`<div class="goal">${esc(sec.goal)}</div>`:""}
       <div class="body">
         <div class="player" data-key="${i}">${playerInner}</div>
         ${fb}
-        <div class="picker-label">视频列表(点名称播放,✎ 改名,× 删除):</div>
         <div class="chips">${chips}</div>
         <div class="custom">
-          <input type="text" placeholder="粘贴 B站链接或 BV号 → 添加" data-inp="${i}">
-          <button data-act="addVid" data-i="${i}">＋ 添加视频</button>
+          <input type="text" placeholder="粘贴 B站链接或 BV号自动添加" data-inp="${i}">
+          <button data-act="addVid" data-i="${i}" title="添加">＋</button>
         </div>
-        <button class="del-card" data-act="delCard" data-i="${i}">🗑 删除这个训练项目</button>
       </div>`;
     stepsEl.appendChild(step);
   });
@@ -325,8 +348,14 @@ stepsEl.addEventListener("click", e=>{
     const inp=stepsEl.querySelector(`[data-inp="${i}"]`);
     const bv=parseBv(inp.value);
     if(!bv){ inp.value=""; inp.placeholder="没识别到 BV 号,请贴含 BVxxx 的链接"; return; }
-    if(!secs[i].videos.some(v=>v.bv===bv)) secs[i].videos.push({bv,label:"自定义 "+bv.slice(-4)});
+    let vid=secs[i].videos.find(v=>v.bv===bv);
+    if(!vid){ vid={bv,label:"⏳ 读取标题中…"}; secs[i].videos.push(vid); }
     secs[i].sel=bv; saveData(); inp.value=""; current=i; render(); loadPlayer(i);
+    // 自动去 B站读取标题作为视频名;失败则退回 BV 简称
+    fetchBiliTitle(bv, title=>{
+      vid.label = title ? title : ("自定义 "+bv.slice(-4));
+      saveData(); render();
+    });
   }
   else if(act==="delCard"){
     if(!confirm(`删除训练项目「${secs[i].title}」?`)) return;
