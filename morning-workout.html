@@ -22,7 +22,6 @@
   .theme{font-size:14px;color:var(--accent);font-weight:600}
   .meta{font-size:13px;color:var(--sub);margin-top:2px}
 
-  /* 星期切换 */
   .days{display:flex;gap:6px;margin:14px 0 18px}
   .day{
     flex:1;text-align:center;font-size:13px;padding:9px 0;border-radius:10px;
@@ -52,9 +51,12 @@
     display:flex;align-items:center;justify-content:center;
   }
   .step.done .badge{background:var(--done);color:#fff}
-  .step-title{font-size:16px;font-weight:700;flex:1}
+  .step-title{font-size:16px;font-weight:700;flex:1;display:flex;align-items:center;gap:7px;min-width:0}
+  .step-title span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .step-min{font-size:12px;color:var(--sub);flex:none}
   .chev{font-size:13px;color:var(--sub);flex:none;margin-left:4px}
+  .ic-edit{font-size:12px;color:var(--sub);cursor:pointer;flex:none;opacity:.6}
+  .ic-edit:hover{opacity:1;color:var(--accent)}
   .goal{font-size:13px;color:var(--sub);margin:8px 0 0;padding-left:40px}
 
   .body{display:none;margin-top:14px}
@@ -67,7 +69,7 @@
   .player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .player .placeholder{
     position:absolute;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:10px;cursor:pointer;color:#fff;
+    align-items:center;justify-content:center;gap:10px;cursor:pointer;color:#fff;text-align:center;padding:12px;
   }
   .player .play-ico{
     width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.15);
@@ -85,13 +87,14 @@
   }
   .chip.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
   .chip-lbl{cursor:pointer}
-  .chip-del{
-    cursor:pointer;font-weight:700;font-size:14px;line-height:1;opacity:.45;
+  .chip-ic{
+    cursor:pointer;font-weight:700;font-size:13px;line-height:1;opacity:.5;
     width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;
   }
-  .chip-del:hover{opacity:1;background:rgba(192,57,43,.12);color:#c0392b}
-  .chip.sel .chip-del:hover{background:rgba(255,255,255,.25);color:#fff}
-  .custom{display:flex;gap:8px;margin-bottom:4px}
+  .chip-ic:hover{opacity:1;background:rgba(0,0,0,.06)}
+  .chip.sel .chip-ic:hover{background:rgba(255,255,255,.25)}
+  .chip-del:hover{background:rgba(192,57,43,.12)!important;color:#c0392b}
+  .custom{display:flex;gap:8px;margin-bottom:12px}
   .custom input{
     flex:1;font-size:13px;padding:8px 10px;border:1px solid var(--line);
     border-radius:9px;background:#fff;min-width:0;
@@ -100,10 +103,19 @@
     font-size:13px;padding:8px 12px;border:1px solid var(--line);background:#fff;
     border-radius:9px;cursor:pointer;white-space:nowrap;
   }
+  .del-card{
+    font-size:12.5px;color:#c0392b;background:none;border:1px solid #e6c9c3;
+    padding:7px 12px;border-radius:9px;cursor:pointer;
+  }
 
+  .add-card{
+    width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--sub);
+    font-size:14px;font-weight:600;padding:13px;border-radius:14px;cursor:pointer;margin-bottom:14px;
+  }
+  .add-card:hover{border-color:var(--accent);color:var(--accent)}
   .finish-day{
     width:100%;border:none;background:var(--done);color:#fff;font-size:15px;
-    font-weight:700;padding:14px;border-radius:12px;cursor:pointer;margin-top:4px;
+    font-weight:700;padding:14px;border-radius:12px;cursor:pointer;
   }
   .done-banner{
     text-align:center;padding:28px 16px;background:var(--card);border-radius:16px;
@@ -137,234 +149,216 @@
 
 <div id="steps"></div>
 
+<button class="add-card" id="addCard">＋ 添加训练项目</button>
 <button class="finish-day" id="finishDay">✅ 标记今天完成</button>
 
 <div class="tip">
-  提示:八段锦默认放了一条国家体育总局12分钟版,<b>建议换成你自己那条</b>——在视频下方粘贴框贴 B站链接或 BV 号即可,页面会记住。若某条视频加载不出,点它下方的"在 B站打开"直接看。
+  提示:点标题旁的 ✎ 改训练项目名 / 视频名;卡片可增删。若视频黑屏,点它下方"在 B站打开"直接看。所有改动都存在本机,换设备不同步。
 </div>
 
 <footer>晨练播放器 · 数据只存在你本机</footer>
 
 <script>
-// ---- 视频库(全部为真实 B站 BV 号,可自行替换) ----
-const PLAN = {
-  neck: {
-    title:"肩颈唤醒", min:"5 分钟", goal:"缓解久坐圆肩脖子僵,慢一点、配呼吸",
-    videos:[
-      {bv:"BV1Rg411w7nD", label:"10分钟肩颈瑜伽(推荐)"},
-      {bv:"BV1Bz4y1D7X3", label:"3分钟·没时间版"},
-      {bv:"BV1oW411t73F", label:"1分钟·超快"},
-    ]
-  },
-  baduan: {
-    title:"八段锦", min:"约 12–15 分钟", goal:"今日主体,舒展全身",
-    videos:[
-      {bv:"BV1VsDpYXEqD", label:"总局12分钟版(默认)"},
-      {bv:"BV1gT4y1m7ec", label:"带呼吸口令·经典"},
-      {bv:"BV1n4411Y7e1", label:"教学示范版"},
-    ]
-  },
-  abs: {
-    title:"轻度练腹", min:"10 分钟", goal:"不伤腰、不跑跳,久坐党友好",
-    videos:[
-      {bv:"BV1KeLm6JE39", label:"10分钟腰腹·不伤腰(推荐)"},
-      {bv:"BV1oV411p7Rb", label:"10分钟肚腩消减·热门"},
-      {bv:"BV1HZ4y1W78g", label:"10分钟强健腹肌"},
-    ]
-  },
-  glutes: {
-    title:"轻度练臀", min:"10 分钟", goal:"顶胯不顶腰,顶端夹一秒",
-    videos:[
-      {bv:"BV1Pg7m6XEte", label:"臀桥·腰膝不适必练(推荐)"},
-      {bv:"BV1P5411W7kv", label:"臀桥正确做法·讲解"},
-    ]
-  },
-  arms: {
-    title:"轻度练手臂", min:"8–10 分钟", goal:"沉肩不耸肩,消拜拜肉、紧致线条",
-    videos:[
-      {bv:"BV1YD4y197Wn", label:"10分钟瘦手臂·超热门(推荐)"},
-      {bv:"BV1AK411T7CH", label:"帕梅拉·水壶紧实手臂"},
-      {bv:"BV1P1421k7Kz", label:"站坐都可练·新手友好"},
-    ]
-  },
-};
-
 const WEEK = ["周日","周一","周二","周三","周四","周五","周六"];
-// 力量项三选一轮换:周一腹 周二臀 周三手臂 周四腹 周五臀 周六手臂 周日恢复
-const FOCUS = {1:"abs", 2:"glutes", 3:"arms", 4:"abs", 5:"glutes", 6:"arms"};
-const FOCUS_CN = {abs:"腹", glutes:"臀", arms:"手臂"};
-function daySequence(d){
-  if(d===0) return {keys:["neck","baduan"], theme:"恢复日 · 轻松收尾"};
-  const focus = FOCUS[d];
-  return {keys:["neck","baduan",focus], theme:"肩颈 + 八段锦 + "+FOCUS_CN[focus]};
+
+// ---- 默认课表(仅首次加载时用来生成,之后一切以本地存储为准) ----
+function seed(){
+  const T={
+    neck:{title:"肩颈唤醒",min:"5 分钟",goal:"缓解久坐圆肩脖子僵,慢一点、配呼吸",videos:[
+      {bv:"BV1Rg411w7nD",label:"10分钟肩颈瑜伽(推荐)"},{bv:"BV1Bz4y1D7X3",label:"3分钟·没时间版"},{bv:"BV1oW411t73F",label:"1分钟·超快"}]},
+    baduan:{title:"八段锦",min:"约 12–15 分钟",goal:"今日主体,舒展全身",videos:[
+      {bv:"BV1VsDpYXEqD",label:"总局12分钟版(默认)"},{bv:"BV1gT4y1m7ec",label:"带呼吸口令·经典"},{bv:"BV1n4411Y7e1",label:"教学示范版"}]},
+    abs:{title:"轻度练腹",min:"10 分钟",goal:"不伤腰、不跑跳,久坐党友好",videos:[
+      {bv:"BV1KeLm6JE39",label:"10分钟腰腹·不伤腰(推荐)"},{bv:"BV1oV411p7Rb",label:"10分钟肚腩消减·热门"},{bv:"BV1HZ4y1W78g",label:"10分钟强健腹肌"}]},
+    glutes:{title:"轻度练臀",min:"10 分钟",goal:"顶胯不顶腰,顶端夹一秒",videos:[
+      {bv:"BV1Pg7m6XEte",label:"臀桥·腰膝不适必练(推荐)"},{bv:"BV1P5411W7kv",label:"臀桥正确做法·讲解"}]},
+    arms:{title:"轻度练手臂",min:"8–10 分钟",goal:"沉肩不耸肩,消拜拜肉、紧致线条",videos:[
+      {bv:"BV1YD4y197Wn",label:"10分钟瘦手臂·超热门(推荐)"},{bv:"BV1AK411T7CH",label:"帕梅拉·水壶紧实手臂"},{bv:"BV1P1421k7Kz",label:"站坐都可练·新手友好"}]},
+  };
+  const map={0:["neck","baduan"],1:["neck","baduan","abs"],2:["neck","baduan","glutes"],
+             3:["neck","baduan","arms"],4:["neck","baduan","abs"],5:["neck","baduan","glutes"],6:["neck","baduan","arms"]};
+  const data={};
+  for(let d=0;d<7;d++){
+    data[d]=map[d].map(k=>{const t=T[k];
+      return {title:t.title,min:t.min,goal:t.goal,videos:t.videos.map(v=>({...v})),sel:t.videos[0].bv};});
+  }
+  return data;
 }
 
-// ---- 状态与本地存储 ----
-const today = new Date().getDay();
-let viewDay = today;                 // 当前查看的星期
-let seq = daySequence(viewDay);
-const LS_VID="mw_videos", LS_SEL="mw_sel", LS_LOG="mw_log";
-const store = JSON.parse(localStorage.getItem(LS_VID)||"{}");  // {key:[{bv,label}]} 用户维护的完整列表
-const sel = JSON.parse(localStorage.getItem(LS_SEL)||"{}");    // {key:bv} 当前选中
-function getVideos(key){ return store[key] || PLAN[key].videos.slice(); }
-function saveVideos(){ localStorage.setItem(LS_VID,JSON.stringify(store)); }
-function getBv(key){
-  const list=getVideos(key), cur=sel[key];
-  if(cur && list.some(v=>v.bv===cur)) return cur;
-  return list.length ? list[0].bv : null;
-}
+// ---- 数据与存储 ----
+const LS_DATA="mw_data", LS_LOG="mw_log";
+let DATA = JSON.parse(localStorage.getItem(LS_DATA)||"null");
+if(!DATA){ DATA=seed(); }
+function saveData(){ localStorage.setItem(LS_DATA,JSON.stringify(DATA)); }
 function parseBv(s){ const m=(s||"").match(/BV[0-9A-Za-z]{10}/); return m?m[0]:null; }
-function addVideo(key,bv){
-  const list=getVideos(key);
-  if(list.some(v=>v.bv===bv)) return;         // 已存在则不重复加
-  list.push({bv, label:"自定义 "+bv.slice(-4)});
-  store[key]=list; saveVideos();
-}
-function delVideo(key,bv){
-  store[key]=getVideos(key).filter(v=>v.bv!==bv); saveVideos();
-  if(sel[key]===bv){ delete sel[key]; localStorage.setItem(LS_SEL,JSON.stringify(sel)); }
-}
-let current=-1;
 
-const now=new Date();
+const today = new Date().getDay();
+let viewDay = today;
+let current = -1;
+const now = new Date();
+
+const sections = ()=>DATA[viewDay];
+function bvOf(sec){
+  if(!sec.videos.length) return null;
+  if(sec.sel && sec.videos.some(v=>v.bv===sec.sel)) return sec.sel;
+  return sec.videos[0].bv;
+}
+
+// ---- 头部 & 星期 ----
 const dateEl=document.getElementById("date");
-const stepsEl=document.getElementById("steps");
-
-// ---- 星期切换 ----
 const daysEl=document.getElementById("days");
-const ORDER=[1,2,3,4,5,6,0]; // 周一→周日
+const stepsEl=document.getElementById("steps");
+const ORDER=[1,2,3,4,5,6,0];
+
 function renderDays(){
   daysEl.innerHTML="";
   ORDER.forEach(d=>{
     const b=document.createElement("div");
     b.className="day"+(d===viewDay?" sel":"")+(d===today?" today":"");
     b.textContent=WEEK[d].replace("周","");
-    b.onclick=()=>{ viewDay=d; seq=daySequence(d); current=-1; renderDays(); renderHead(); render(); };
+    b.onclick=()=>{ viewDay=d; current=-1; renderDays(); renderHead(); render(); };
     daysEl.appendChild(b);
   });
 }
 function renderHead(){
   const tag = viewDay===today ? `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 · 今天` : "预览";
   dateEl.textContent=`${WEEK[viewDay]} · ${tag}`;
-  document.getElementById("theme").textContent=seq.theme;
-  document.getElementById("meta").textContent="共 "+seq.keys.length+" 节 · 约 30 分钟";
+  const titles=sections().map(s=>s.title).join(" + ");
+  document.getElementById("theme").textContent=titles||"今天还没有安排,点下面添加";
+  document.getElementById("meta").textContent="共 "+sections().length+" 节";
 }
 
-// ---- 渲染步骤 ----
+// ---- 渲染卡片 ----
 function render(){
+  const secs=sections();
   stepsEl.innerHTML="";
-  seq.keys.forEach((key,i)=>{
-    const p=PLAN[key];
-    const activeBv=getBv(key);
-    const isActive=i===current;
-    const isDone=i<current;
+  secs.forEach((sec,i)=>{
+    const activeBv=bvOf(sec);
+    const isActive=i===current, isDone=i<current;
     const step=document.createElement("div");
     step.className="step"+(isActive?" active":"")+(isDone?" done":"");
 
-    const vids=getVideos(key);
-    const chips=vids.map(v=>
-      `<div class="chip${v.bv===activeBv?" sel":""}" data-key="${key}">
-         <span class="chip-lbl" data-pick="${v.bv}">${v.label}</span>
-         <span class="chip-del" data-del="${v.bv}" title="删除">×</span>
+    const chips=sec.videos.map(v=>
+      `<div class="chip${v.bv===activeBv?" sel":""}">
+         <span class="chip-lbl" data-act="pick" data-i="${i}" data-bv="${v.bv}">${v.label}</span>
+         <span class="chip-ic" data-act="editVid" data-i="${i}" data-bv="${v.bv}" title="改名">✎</span>
+         <span class="chip-ic chip-del" data-act="delVid" data-i="${i}" data-bv="${v.bv}" title="删除">×</span>
        </div>`
-    ).join("");
+    ).join("") || `<div style="font-size:12.5px;color:var(--sub)">还没有视频,在下面粘贴 BV 号添加 ↓</div>`;
+
+    const playerInner = activeBv
+      ? `<div class="placeholder" data-act="play" data-i="${i}"><div class="play-ico">▶</div><div>点击播放 · 开始跟练</div></div>`
+      : `<div class="placeholder"><div>先在下面添加一个视频</div></div>`;
+    const fb = activeBv
+      ? `<div class="fallback">加载不出?<a href="https://www.bilibili.com/video/${activeBv}" target="_blank" rel="noopener">在 B站打开这条 ↗</a></div>` : "";
 
     step.innerHTML=`
-      <div class="step-top" data-open="${i}">
+      <div class="step-top" data-act="toggle" data-i="${i}">
         <div class="badge">${isDone?"✓":i+1}</div>
-        <div class="step-title">${p.title}</div>
-        <div class="step-min">${p.min}</div>
+        <div class="step-title">
+          <span>${sec.title}</span>
+          <span class="ic-edit" data-act="editTitle" data-i="${i}" title="改训练项目名">✎</span>
+        </div>
+        <div class="step-min">${sec.min||""}</div>
         <div class="chev">${isActive?"▾":"▸"}</div>
       </div>
-      <div class="goal">${p.goal}</div>
+      ${sec.goal?`<div class="goal">${sec.goal}</div>`:""}
       <div class="body">
-        <div class="player" data-key="${key}">
-          <div class="placeholder" data-play="${key}">
-            <div class="play-ico">▶</div><div>点击播放 · 开始跟练</div>
-          </div>
-        </div>
-        <div class="fallback">加载不出?<a href="https://www.bilibili.com/video/${activeBv}" target="_blank" rel="noopener">在 B站打开这条 ↗</a></div>
-        <div class="picker-label">视频列表(点标签播放,点 × 删除):</div>
+        <div class="player" data-key="${i}">${playerInner}</div>
+        ${fb}
+        <div class="picker-label">视频列表(点名称播放,✎ 改名,× 删除):</div>
         <div class="chips">${chips}</div>
         <div class="custom">
-          <input type="text" placeholder="粘贴 B站链接或 BV号 → 添加" data-inp="${key}">
-          <button data-add="${key}">＋ 添加</button>
+          <input type="text" placeholder="粘贴 B站链接或 BV号 → 添加" data-inp="${i}">
+          <button data-act="addVid" data-i="${i}">＋ 添加视频</button>
         </div>
+        <button class="del-card" data-act="delCard" data-i="${i}">🗑 删除这个训练项目</button>
       </div>`;
     stepsEl.appendChild(step);
   });
-  bind();
 }
 
-function loadPlayer(key){
-  const wrap=document.querySelector(`.player[data-key="${key}"]`);
-  if(!wrap) return;
-  const bv=getBv(key);
-  // 必须用显式 https:协议相对 // 在 file:// 下会被当成 file:// 而加载失败
+function loadPlayer(i){
+  const sec=sections()[i]; if(!sec) return;
+  const bv=bvOf(sec); if(!bv) return;
+  const wrap=document.querySelector(`.player[data-key="${i}"]`); if(!wrap) return;
+  // 必须用显式 https:协议相对 // 在 file:// 下会失效
   wrap.innerHTML=`<iframe src="https://player.bilibili.com/player.html?bvid=${bv}&page=1&autoplay=1&high_quality=1&danmaku=0"
     scrolling="no" frameborder="no" allowfullscreen="true" allow="autoplay; fullscreen"></iframe>`;
 }
-
-// 点卡片标题即展开 + 自动播放(手风琴:只开一节)
 function openStep(i){
   current=i; render();
   const el=stepsEl.children[i];
   if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
-  setTimeout(()=>loadPlayer(seq.keys[i]),150);
+  setTimeout(()=>loadPlayer(i),150);
 }
 
-function bind(){
-  document.querySelectorAll("[data-open]").forEach(el=>el.onclick=()=>{
-    const i=+el.dataset.open;
-    if(i===current){ current=-1; render(); }   // 再点一次收起
-    else openStep(i);
-  });
-  document.querySelectorAll("[data-play]").forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); loadPlayer(el.dataset.play); });
-  // 点标签 → 选中并播放
-  document.querySelectorAll(".chip-lbl").forEach(el=>el.onclick=()=>{
-    const key=el.closest(".chip").dataset.key, bv=el.dataset.pick;
-    sel[key]=bv; localStorage.setItem(LS_SEL,JSON.stringify(sel));
-    current=seq.keys.indexOf(key); render(); loadPlayer(key);
-  });
-  // 点 × → 删除
-  document.querySelectorAll(".chip-del").forEach(el=>el.onclick=(e)=>{
-    e.stopPropagation();
-    const key=el.closest(".chip").dataset.key, bv=el.dataset.del;
-    if(getVideos(key).length<=1){ el.closest(".chip").querySelector(".chip-lbl").textContent="至少留一个"; return; }
-    delVideo(key,bv);
-    current=seq.keys.indexOf(key); render();
-  });
-  // 添加新视频
-  document.querySelectorAll("[data-add]").forEach(el=>el.onclick=()=>{
-    const key=el.dataset.add;
-    const inp=document.querySelector(`[data-inp="${key}"]`);
+// ---- 事件委托 ----
+stepsEl.addEventListener("click", e=>{
+  const el=e.target.closest("[data-act]"); if(!el) return;
+  const act=el.dataset.act;
+  const i=el.dataset.i!==undefined?+el.dataset.i:null;
+  const secs=sections();
+
+  if(act==="toggle"){ current===i ? (current=-1, render()) : openStep(i); }
+
+  else if(act==="editTitle"){
+    const v=prompt("训练项目名称:", secs[i].title);
+    if(v!==null && v.trim()){ secs[i].title=v.trim(); saveData(); render(); renderHead(); }
+  }
+  else if(act==="play"){ loadPlayer(i); }
+
+  else if(act==="pick"){
+    secs[i].sel=el.dataset.bv; saveData(); current=i; render(); loadPlayer(i);
+  }
+  else if(act==="editVid"){
+    const vid=secs[i].videos.find(v=>v.bv===el.dataset.bv); if(!vid) return;
+    const v=prompt("视频名称:", vid.label);
+    if(v!==null && v.trim()){ vid.label=v.trim(); saveData(); render(); }
+  }
+  else if(act==="delVid"){
+    secs[i].videos=secs[i].videos.filter(v=>v.bv!==el.dataset.bv);
+    if(secs[i].sel===el.dataset.bv) secs[i].sel=secs[i].videos[0]?.bv||null;
+    saveData(); render();
+  }
+  else if(act==="addVid"){
+    const inp=stepsEl.querySelector(`[data-inp="${i}"]`);
     const bv=parseBv(inp.value);
     if(!bv){ inp.value=""; inp.placeholder="没识别到 BV 号,请贴含 BVxxx 的链接"; return; }
-    addVideo(key,bv); sel[key]=bv; localStorage.setItem(LS_SEL,JSON.stringify(sel));
-    inp.value="";
-    current=seq.keys.indexOf(key); render(); loadPlayer(key);
-  });
-}
+    if(!secs[i].videos.some(v=>v.bv===bv)) secs[i].videos.push({bv,label:"自定义 "+bv.slice(-4)});
+    secs[i].sel=bv; saveData(); inp.value=""; current=i; render(); loadPlayer(i);
+  }
+  else if(act==="delCard"){
+    if(!confirm(`删除训练项目「${secs[i].title}」?`)) return;
+    secs.splice(i,1);
+    if(current>=secs.length) current=-1;
+    saveData(); render(); renderHead();
+  }
+});
 
-function finishDay(){
+// ---- 顶部/底部按钮 ----
+document.getElementById("startAll").onclick=()=>{ if(sections().length) openStep(0); };
+document.getElementById("addCard").onclick=()=>{
+  const title=prompt("新训练项目名称:", "新训练项目");
+  if(title===null || !title.trim()) return;
+  sections().push({title:title.trim(), min:"10 分钟", goal:"", videos:[], sel:null});
+  saveData(); renderHead(); render();
+  openStep(sections().length-1);
+};
+document.getElementById("finishDay").onclick=()=>{
   const log=JSON.parse(localStorage.getItem(LS_LOG)||"[]");
   const key=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
   if(!log.includes(key)) log.push(key);
   localStorage.setItem(LS_LOG,JSON.stringify(log));
   let streak=0, d=new Date();
-  for(;;){
-    const k=`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-    if(log.includes(k)){ streak++; d.setDate(d.getDate()-1); } else break;
-  }
+  for(;;){ const k=`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    if(log.includes(k)){ streak++; d.setDate(d.getDate()-1); } else break; }
   document.getElementById("streakNum").textContent=streak;
   document.getElementById("doneBanner").classList.add("show");
   document.getElementById("doneBanner").scrollIntoView({behavior:"smooth"});
-}
+};
 
-document.getElementById("startAll").onclick=()=>openStep(0);
-document.getElementById("finishDay").onclick=finishDay;
-
-renderDays(); renderHead(); render();
+saveData(); renderDays(); renderHead(); render();
 </script>
 </body>
 </html>
